@@ -5,7 +5,8 @@ from dotenv import load_dotenv
 load_dotenv(override=True)
 
 # DeepSeek API配置
-DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "") or os.getenv("OPENAI_API_KEY", "")
+# 优先使用 OPENAI_API_KEY，避免 .env 模板中的 DEEPSEEK_API_KEY 占位值覆盖真实密钥
+DEEPSEEK_API_KEY = os.getenv("OPENAI_API_KEY", "") or os.getenv("DEEPSEEK_API_KEY", "")
 DEEPSEEK_BASE_URL = os.getenv("DEEPSEEK_BASE_URL", os.getenv("OPENAI_BASE_URL", "https://api.deepseek.com/v1"))
 
 # 默认AI模型名称（支持任何OpenAI兼容的模型）

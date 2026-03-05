@@ -12,6 +12,11 @@ class DeepSeekClient:
             api_key=config.DEEPSEEK_API_KEY,
             base_url=config.DEEPSEEK_BASE_URL
         )
+
+    @staticmethod
+    def _is_gpt5_family(model_name: str) -> bool:
+        """判断是否为 gpt-5 系列模型。"""
+        return model_name.lower().startswith("gpt-5")
         
     def call_api(self, messages: List[Dict[str, str]], model: Optional[str] = None, 
                  temperature: float = 0.7, max_tokens: int = 2000) -> str:
@@ -24,12 +29,22 @@ class DeepSeekClient:
             max_tokens = 8000  # reasoner 模型需要更多 tokens 来输出推理过程
         
         try:
-            response = self.client.chat.completions.create(
-                model=model_to_use,
-                messages=messages,
-                temperature=temperature,
-                max_tokens=max_tokens
-            )
+            request_kwargs = {
+                "model": model_to_use,
+                "messages": messages,
+            }
+
+            # gpt-5 系列要求使用 max_completion_tokens，不支持 max_tokens
+            if self._is_gpt5_family(model_to_use):
+                request_kwargs["max_completion_tokens"] = max_tokens
+                # gpt-5 仅支持 temperature 默认值（1），避免传入 0.7/0.3 等值报错
+                if temperature == 1:
+                    request_kwargs["temperature"] = temperature
+            else:
+                request_kwargs["temperature"] = temperature
+                request_kwargs["max_tokens"] = max_tokens
+
+            response = self.client.chat.completions.create(**request_kwargs)
             
             # 处理 reasoner 模型的响应
             message = response.choices[0].message
